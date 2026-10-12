@@ -41,6 +41,11 @@ export function laneImageFor(capability?: string): string {
   return LANE_IMAGES["base"]!;
 }
 
+/** Map expert access class to a default lane: ro -> bwrap, scoped -> docker. */
+export function tierForExpert(access: "ro" | "scoped", capability?: string): LaneSelection {
+  if (access === "ro" && !capability) return selectTier({});
+  return selectTier({ needsCleanEnv: true, capability });
+}
 /** Pick the cheapest tier that satisfies the request. */
 export function selectTier(req: LaneRequest): LaneSelection {
   if (req.force) {
