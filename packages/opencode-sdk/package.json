@@ -1,0 +1,23 @@
+{
+  "name": "@heretek-ai/sdk",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Shared contracts, host client, gate runner, and testkit for the Heretek-OpenCode ecosystem.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "bunx tsc --noEmit",
+    "test": "bun test test/"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

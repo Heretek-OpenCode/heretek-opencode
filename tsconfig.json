@@ -11,7 +11,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node", "bun-types"]
   },
   "include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/opencode-packs/packs/*/src/**/*"],
   "exclude": ["node_modules", "dist", "worktrees"]
