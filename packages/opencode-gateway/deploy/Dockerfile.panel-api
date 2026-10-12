@@ -1,0 +1,23 @@
+# Panel API image for opencode-gateway.
+# Adapted from scraper-swarm/deploy/Dockerfile.panel-api: same base, uv
+# install, uvicorn entrypoint; workspace COPY lines for swarmd/gateway
+# dropped because the catalog loader is vendored into panel_api itself.
+
+FROM python:3.12-slim
+WORKDIR /opt/opencode-gateway
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+COPY catalog ./catalog
+COPY apps/panel-api ./apps/panel-api
+
+RUN uv pip install --system ./apps/panel-api
+
+ENV PATH="/opt/opencode-gateway/.venv/bin:$PATH"
+EXPOSE 8000
+
+CMD ["uvicorn", "panel_api.main:app", "--host", "0.0.0.0", "--port", "8000"]

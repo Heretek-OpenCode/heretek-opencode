@@ -1,0 +1,142 @@
+# opencode-gateway — Production Control Plane Compose
+# Deploys Caddy Edge Proxy, TS/Bun MCP Gateway, Panel API, Smokescreen
+# Egress SSRF Guard, and Valkey.
+# Adapted from scraper-swarm/deploy/docker-compose.control.yml: same service
+# roles, env contract (SWARM_*), internal networks, and volume posture;
+# names re-scoped to the opencode-gateway layout (gateway-* / og_*).
+#
+# Operator environment lives in the package-root .env (copy from .env.example).
+# Launch with: docker compose --env-file ../.env -f deploy/compose.yaml up -d
+# (env_file entries below also load ../.env into panel-api/gateway containers.)
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,z
+      - panel_web:/var/www/panel-web:ro,z
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    depends_on:
+      - panel-api
+      - gateway
+
+  panel-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.panel-api
+    restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      - SWARM_DATA_DIR=/var/lib/opencode-gateway
+      - SWARM_REPO_ROOT=/opt/opencode-gateway
+      - SWARM_BOOTSTRAP_TOKEN
+      # Public MCP origin for key-issuance snippets, and the
+      # external domain (Caddy uses GATEWAY_DOMAIN).
+      - SWARM_PUBLIC_MCP_URL=${SWARM_PUBLIC_MCP_URL:-}
+      - GATEWAY_DOMAIN=${GATEWAY_DOMAIN:-localhost}
+      # Gateway contract env: SSRF resolver posture,
+      # audit query privacy / HMAC salt / retention.
+      - SWARM_SSRF_RESOLVER_FAIL_CLOSED=${SWARM_SSRF_RESOLVER_FAIL_CLOSED:-}
+      - SWARM_AUDIT_QUERY_MODE=${SWARM_AUDIT_QUERY_MODE:-verbatim}
+      - SWARM_AUDIT_HMAC_SALT
+      - SWARM_AUDIT_RETENTION_DAYS=${SWARM_AUDIT_RETENTION_DAYS:-}
+    volumes:
+      - gateway_data:/var/lib/opencode-gateway
+      - ../catalog:/opt/opencode-gateway/catalog:ro,z
+    networks:
+      - edge
+      - control
+      - svc
+
+  gateway:
+    image: oven/bun:1
+    restart: unless-stopped
+    working_dir: /opt/opencode-gateway/apps/gateway
+    command: ["run", "src/index.ts"]
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      - GATEWAY_PORT=8000
+      - GATEWAY_TOKEN
+      - SEARXNG_URL=http://searxng:8080
+      - CRAWL4AI_URL=http://crawl4ai:11235
+      # Gateway contract env: fetch cap, SSRF resolver posture,
+      # audit privacy/retention, deployed engine set, public domain/origin.
+      - SWARM_MAX_FETCH_BYTES=${SWARM_MAX_FETCH_BYTES:-3145728}
+      - SWARM_SSRF_RESOLVER_FAIL_CLOSED=${SWARM_SSRF_RESOLVER_FAIL_CLOSED:-}
+      - SWARM_AUDIT_QUERY_MODE=${SWARM_AUDIT_QUERY_MODE:-verbatim}
+      - SWARM_AUDIT_HMAC_SALT
+      - SWARM_AUDIT_RETENTION_DAYS=${SWARM_AUDIT_RETENTION_DAYS:-}
+      - SWARM_DEPLOYED_ENGINES=${SWARM_DEPLOYED_ENGINES:-}
+      - GATEWAY_DOMAIN=${GATEWAY_DOMAIN:-localhost}
+      - SWARM_PUBLIC_MCP_URL=${SWARM_PUBLIC_MCP_URL:-}
+      # Lane egress: every engine fetch traverses Smokescreen.
+      - HTTP_PROXY=http://smokescreen:4750
+      - HTTPS_PROXY=http://smokescreen:4750
+      - NO_PROXY=gateway,searxng,crawl4ai,scrapling,valkey,panel-api
+    volumes:
+      - ../apps/gateway:/opt/opencode-gateway/apps/gateway:ro,z
+      - ../packages:/opt/opencode-gateway/packages:ro,z
+      - gateway_data:/var/lib/opencode-gateway
+    networks:
+      - edge
+      - svc
+    depends_on:
+      - smokescreen
+      - valkey
+
+  smokescreen:
+    build:
+      context: ./smokescreen
+      dockerfile: Dockerfile
+    image: opencode-gateway/smokescreen:pinned
+    restart: unless-stopped
+    networks:
+      - svc
+      - egress-out
+
+  valkey:
+    image: valkey/valkey:latest
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
+      interval: 30s
+    volumes:
+      - valkey_data:/data
+    networks:
+      - svc
+
+networks:
+  edge:
+    name: gateway-edge
+  control:
+    name: gateway-control
+    internal: true
+  svc:
+    name: gateway-svc
+    internal: true
+  egress-out:
+    name: gateway-egress-out
+
+volumes:
+  gateway_data:
+    name: opencode_gateway_data
+  valkey_data:
+    name: opencode_gateway_valkey
+  panel_web:
+    name: opencode_gateway_panel_web
+  caddy_data:
+    name: opencode_gateway_caddy_data
+  caddy_config:
+    name: opencode_gateway_caddy_config

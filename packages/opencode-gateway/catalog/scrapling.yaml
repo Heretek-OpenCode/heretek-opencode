@@ -1,16 +1,28 @@
 id: scrapling
 name: Scrapling
 tier: core
-license: { spdx: BSD-3-Clause }
+verified: false
+license:
+  spdx: BSD-3-Clause
+  notice: "Scrapling uses Camoufox browser components for adaptive stealth fetching."
 image: { repo: pyd4vinci/scrapling, tag: latest }
-port: 8000
-networks: [svc, egress-web]
 resources:
-  lite: { cpus: 1, mem: 1g, shm: 512m }
+  lite:     { cpus: 1, mem: 1g, shm: 512m }
   standard: { cpus: 2, mem: 2g, shm: 1g }
+  heavy:    { cpus: 4, mem: 4g, shm: 2g }
+networks: [svc, egress-web]
+port: 8000
 hardening: { user: "1000:1000", seccomp: chromium, tmpfs: ["/tmp"] }
-egress: { proxy: smokescreen, direct_peers: [gateway] }
-health:
-  test: ["CMD-SHELL", "curl --noproxy '*' -f http://localhost:8000/health || exit 1"]
-  interval: 30s
-tools: [extract_structured]
+secrets: [PROXY_PASSWORD]
+native_exposable: true
+params_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    stealth_engine: { type: string, enum: ["camoufox", "playwright"] }
+    headless: { type: boolean }
+    network_timeout: { type: integer, minimum: 5, maximum: 120 }
+param_env:
+  stealth_engine: SCRAPLING_ENGINE
+  headless: SCRAPLING_HEADLESS
+  network_timeout: SCRAPLING_TIMEOUT

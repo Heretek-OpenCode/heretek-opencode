@@ -1,17 +1,39 @@
 id: searxng
 name: SearXNG
 tier: core
-license: { spdx: AGPL-3.0-only }
+verified: false
+license:
+  spdx: AGPL-3.0-only
+  notice: "SearXNG is AGPL-3.0. It runs unmodified in its own container; Scraper Swarm does not link against it."
 image: { repo: searxng/searxng, tag: latest }
-port: 8080
+resources:
+  lite:     { cpus: 0.5, mem: 512m }
+  standard: { cpus: 1,   mem: 1g }
+  heavy:    { cpus: 2,   mem: 2g }
 networks: [svc, egress-web]
 requires: [valkey]
-resources:
-  lite: { cpus: 0.5, mem: 512m }
-  standard: { cpus: 1, mem: 1g }
+port: 8080
 hardening: { user: "977:977", read_only: false, tmpfs: ["/tmp"] }
-egress: { proxy: smokescreen, direct_peers: [gateway] }
+# Phase 02-infra-reconcile: liveness probe for health-driven restart.
+# Loopback MUST bypass the egress proxy env (NO_PROXY covers in-stack
+# peers, not localhost) or the probe gets Smokescreen 407 and flaps.
+# Verified live: direct wget on :8080 is HTTP 200.
 health:
   test: ["CMD-SHELL", "env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy wget -q -O /dev/null http://localhost:8080/ || exit 1"]
   interval: 30s
-tools: [search]
+secrets: [SEARXNG_SECRET]
+volumes: ["config:/etc/searxng"]
+native_exposable: false
+params_schema:
+  type: object
+  additionalProperties: false
+  properties:
+    search_language: { type: string, pattern: "^[a-zA-Z_-]{2,10}$" }
+    safe_search: { type: integer, minimum: 0, maximum: 2 }
+    autocomplete: { type: string, enum: ["google", "duckduckgo", "brave", "none"] }
+    base_url: { type: string, format: "uri" }
+param_env:
+  search_language: SEARXNG_DEFAULT_LANG
+  safe_search: SEARXNG_SAFE_SEARCH
+  autocomplete: SEARXNG_AUTOCOMPLETE
+  base_url: SEARXNG_BASE_URL

@@ -1,0 +1,17 @@
+id: valkey
+name: Valkey
+tier: support
+verified: false
+license: { spdx: BSD-3-Clause }
+image: { repo: valkey/valkey, tag: latest }
+resources:
+  standard: { cpus: 0.5, mem: 256m }
+networks: [svc]
+port: 6379
+hardening: { user: "999:999", read_only: true, tmpfs: ["/tmp"] }
+# Phase 02-infra-reconcile: liveness probe for health-driven restart.
+# Verified live: `valkey-cli ping` returns PONG in this image.
+health:
+  test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
+  interval: 30s
+volumes: ["data:/data"]
