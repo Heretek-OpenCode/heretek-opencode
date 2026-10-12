@@ -1,0 +1,137 @@
+name: opencode-homelab
+
+# 24/7 homelab topology (STC successor).
+# Control plane (operator shell) runs on the host; compose provides the
+# factory services. All services are ROOTLESS: `user: "1000:1000"`,
+# `cap_drop: [ALL]`, `no-new-privileges`. Never add `privileged: true`,
+# `docker.sock`, host network, or host IPC here — dev-only escalations
+# live in compose.override.dev.yaml and require ALLOW_PRIVILEGED=1.
+#
+# Network boundaries:
+#   frontend — gateway egress ONLY. The gateway is the single service with
+#              external network access (scrape engines, upstream registries).
+#   internal — isolated bridge (`internal: true`). Fleet, distro lanes, and
+#              valkey live here with NO route to the outside world; lanes
+#              reach the network exclusively through gateway `POST /mcp`.
+# Volume drills:
+#   homelab-state        — DURABLE. Fleet journal/snapshots, gateway audit
+#                          chain, valkey dump. Survives `down` and updates.
+#   workspace-disposable — EPHEMERAL. Per-task worktrees/lane mounts. Safe
+#                          to `docker volume rm`; recreated empty on `up`.
+#                          Never store state here.
+
+services:
+  distro:
+    image: ghcr.io/heretek-ai/distro:2.0.26-r1
+    user: "1000:1000"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    command: ["opencode", "serve", "--port", "4096", "--hostname", "0.0.0.0"]
+    ports:
+      - "${DISTRO_PORT:-4096}:4096"
+    environment:
+      OPENCODE_PASSWORD: ${OPENCODE_PASSWORD:?set via `scripts/studio init`}
+    volumes:
+      - workspace-disposable:/workspace:rw
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "bun -e \"fetch('http://localhost:4096/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  gateway:
+    image: ghcr.io/heretek-ai/gateway:1.0.0
+    user: "1000:1000"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    # MCP contract v1: strict JSON-RPC 2.0 over POST /mcp,
+    # X-Swarm-Contract: 1, GET /ready + GET /health probes.
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    environment:
+      GATEWAY_CONTRACT_VERSION: "1"
+      VALKEY_URL: redis://valkey:6379
+    volumes:
+      - homelab-state:/state:rw
+    networks:
+      - frontend
+      - internal
+    depends_on:
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8080/ready')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  fleet:
+    image: ghcr.io/heretek-ai/fleet:1.0.0
+    user: "1000:1000"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    command: ["bun", "run", "src/index.ts", "serve", "--port", "7070"]
+    ports:
+      - "${FLEET_PORT:-7070}:7070"
+    environment:
+      FLEET_GATEWAY_URL: http://gateway:8080/mcp
+      FLEET_DISTRO_URL: http://distro:4096
+      VALKEY_URL: redis://valkey:6379
+      FLEET_AUTONOMY: ${FLEET_AUTONOMY:-balanced}
+    volumes:
+      - homelab-state:/state:rw
+      - workspace-disposable:/workspace:rw
+    networks:
+      - internal
+    depends_on:
+      distro:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8
+    user: "1000:1000"
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    command: ["valkey-server", "--appendonly", "yes", "--dir", "/data"]
+    volumes:
+      - homelab-state:/data:rw
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep -q PONG"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+networks:
+  # Gateway egress only: the sole bridge with an external route. No other
+  # service is attached here; lanes and fleet cannot bypass the gateway.
+  frontend:
+    driver: bridge
+  # Fleet/lane isolation: no external route. Egress policy enforced at the
+  # topology level — a service on `internal` only cannot reach the internet.
+  internal:
+    driver: bridge
+    internal: true
+
+volumes:
+  # Durable operator/factory state (journal, snapshots, audit chain, dumps).
+  homelab-state:
+    driver: local
+  # Disposable per-task worktree/lane mounts. `studio down -v` may drop it;
+  # drills must assert missions resume from homelab-state alone.
+  workspace-disposable:
+    driver: local

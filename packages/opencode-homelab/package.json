@@ -1,0 +1,19 @@
+{
+  "name": "@heretek-ai/homelab",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Homelab deployment tier: compose topology, studio CLI, autonomy dial, cockpit mission projections",
+  "type": "module",
+  "scripts": {
+    "test": "bun test ./test ./cockpit/test",
+    "test:e2e": "bun run scripts/test-e2e-mission.ts",
+    "check": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

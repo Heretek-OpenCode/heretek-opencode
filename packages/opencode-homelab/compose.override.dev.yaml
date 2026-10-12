@@ -1,0 +1,26 @@
+# DEV-MODE OVERRIDE — local live mounts ONLY. No privilege escalation.
+# Apply explicitly:
+#   docker compose -f compose.yaml -f compose.override.dev.yaml up
+# This file NEVER grants privileged:true, docker.sock, host network, or
+# extra capabilities. For sibling-container debugging see the STC pattern;
+# that escalation is refused here — extend this file instead of compose.yaml.
+name: opencode-homelab
+
+services:
+  fleet:
+    volumes:
+      # Live package sources for edit-and-rerun without rebuilding images.
+      - ../opencode-sdk:/packages/opencode-sdk:ro
+      - ./src:/packages/opencode-homelab/src:ro
+      - ./config:/packages/opencode-homelab/config:ro
+      - ./cockpit/src:/packages/opencode-homelab/cockpit/src:ro
+    environment:
+      FLEET_LIVE_RELOAD: "1"
+
+  gateway:
+    volumes:
+      - ../opencode-sdk:/packages/opencode-sdk:ro
+
+  distro:
+    volumes:
+      - ../opencode-sdk:/packages/opencode-sdk:ro
