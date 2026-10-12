@@ -7,6 +7,7 @@
   "scripts": {
     "test": "bun test ./test ./cockpit/test",
     "test:e2e": "bun run scripts/test-e2e-mission.ts",
+    "test:live": "bun run scripts/test-live-e2e.ts",
     "check": "bunx tsc --noEmit"
   },
   "dependencies": {

@@ -1,0 +1,18 @@
+name: ci-unit
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: bun install
+      # Root `bun test` discovers tests across all 6 workspace packages.
+      - run: bun test
