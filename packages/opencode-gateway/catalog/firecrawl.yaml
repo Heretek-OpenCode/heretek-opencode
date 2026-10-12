@@ -1,0 +1,15 @@
+id: firecrawl
+name: Firecrawl
+tier: advanced
+license: { spdx: AGPL-3.0-only }
+image: { repo: firecrawl/firecrawl, tag: latest }
+port: 3002
+networks: [svc, egress-web]
+resources:
+  standard: { cpus: 4, mem: 8g, shm: 2g }
+hardening: { user: "1000:1000", seccomp: chromium }
+egress: { proxy: smokescreen, direct_peers: [gateway] }
+health:
+  test: ["CMD-SHELL", "curl --noproxy '*' -f http://localhost:3002/health || exit 1"]
+  interval: 30s
+tools: [fetch]

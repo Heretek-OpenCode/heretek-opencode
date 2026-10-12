@@ -3,6 +3,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
+    "packages/opencode-gateway/packages/*",
+    "packages/opencode-gateway/apps/*",
     "packages/opencode-packs/packs/*"
   ],
   "scripts": {
@@ -11,6 +13,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "bun-types": "1.4.2",
     "oxlint": "^0.15.0",
     "typescript": "^5.5.0",
     "zod": "^3.23.8"

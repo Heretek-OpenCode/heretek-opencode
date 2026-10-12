@@ -1,0 +1,23 @@
+{
+  "name": "@heretek-ai/gateway-guard",
+  "version": "1.0.0",
+  "description": "OpenCode v2 guard plugin: blocks raw fetch toward arbitrary URLs, allowlists the gateway, registers gateway MCP tools",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.26"
+  },
+  "devDependencies": {
+    "@opencode/client": "2.0.26",
+    "@opencode/schema": "2.0.26",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

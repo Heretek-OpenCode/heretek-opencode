@@ -1,0 +1,59 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "search",
+      "arguments": {
+        "query": "recorded query",
+        "limit": 2
+      }
+    }
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Title: Recorded One\nURL: https://example.com/recorded-1\nSnippet: Recorded snippet one.\n---\nTitle: Recorded Two\nURL: https://example.com/recorded-2\nSnippet: Recorded snippet two.\n---"
+        }
+      ],
+      "structuredContent": {
+        "provenance": {
+          "url": "searxng://search?q=recorded+query",
+          "fetchedAt": "<fetchedAt>",
+          "engine": "searxng",
+          "contentHash": "sha256:50e4380f4fb5ff845fe6923c2fdcaadaa2bd16ed02aa0a49dcb5f746b28ded7c"
+        },
+        "trust": "untrusted",
+        "content": "Title: Recorded One\nURL: https://example.com/recorded-1\nSnippet: Recorded snippet one.\n---\nTitle: Recorded Two\nURL: https://example.com/recorded-2\nSnippet: Recorded snippet two.\n---",
+        "query": "recorded query",
+        "results": [
+          {
+            "rank": 1,
+            "title": "Recorded One",
+            "url": "https://example.com/recorded-1",
+            "snippet": "Recorded snippet one.",
+            "engine": "searxng"
+          },
+          {
+            "rank": 2,
+            "title": "Recorded Two",
+            "url": "https://example.com/recorded-2",
+            "snippet": "Recorded snippet two.",
+            "engine": "searxng"
+          }
+        ]
+      }
+    }
+  }
+}

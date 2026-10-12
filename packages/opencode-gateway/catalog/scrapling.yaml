@@ -1,0 +1,16 @@
+id: scrapling
+name: Scrapling
+tier: core
+license: { spdx: BSD-3-Clause }
+image: { repo: pyd4vinci/scrapling, tag: latest }
+port: 8000
+networks: [svc, egress-web]
+resources:
+  lite: { cpus: 1, mem: 1g, shm: 512m }
+  standard: { cpus: 2, mem: 2g, shm: 1g }
+hardening: { user: "1000:1000", seccomp: chromium, tmpfs: ["/tmp"] }
+egress: { proxy: smokescreen, direct_peers: [gateway] }
+health:
+  test: ["CMD-SHELL", "curl --noproxy '*' -f http://localhost:8000/health || exit 1"]
+  interval: 30s
+tools: [extract_structured]

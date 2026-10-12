@@ -1,0 +1,54 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "extract_structured",
+      "arguments": {
+        "url": "https://example.com/recorded",
+        "fields": [
+          "title",
+          "price"
+        ]
+      }
+    }
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Extracted fields title, price from https://example.com/recorded."
+        }
+      ],
+      "structuredContent": {
+        "provenance": {
+          "url": "https://example.com/recorded",
+          "fetchedAt": "<fetchedAt>",
+          "engine": "scrapling",
+          "contentHash": "sha256:95e2fecb4fb730dce85f4b2c313aede5e138aa63881b957c12e341438804f894"
+        },
+        "trust": "untrusted",
+        "content": "Extracted fields title, price from https://example.com/recorded.",
+        "requestedUrl": "https://example.com/recorded",
+        "data": {
+          "title": "Recorded Page",
+          "price": "42.00"
+        },
+        "fields": [
+          "title",
+          "price"
+        ]
+      }
+    }
+  }
+}

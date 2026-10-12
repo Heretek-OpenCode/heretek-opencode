@@ -1,0 +1,37 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "search",
+      "arguments": {
+        "query": "recorded query"
+      }
+    }
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "SearXNG search failed: connection refused"
+        }
+      ],
+      "structuredContent": {
+        "code": "upstream_error",
+        "message": "SearXNG search failed: connection refused",
+        "retryAfterS": null
+      },
+      "isError": true
+    }
+  }
+}

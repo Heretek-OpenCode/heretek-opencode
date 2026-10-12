@@ -1,0 +1,14 @@
+{
+  "name": "@heretek-ai/opencode-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hardened web-ingestion MCP gateway: versioned contract, typed client, guard plugin, engine catalog, egress deploy snippets",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "bun test packages/contract-client/test apps/gateway/test",
+    "check": "bunx tsc --noEmit -p tsconfig.json"
+  }
+}

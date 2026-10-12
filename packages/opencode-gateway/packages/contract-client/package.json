@@ -1,0 +1,18 @@
+{
+  "name": "@heretek-ai/gateway-contract",
+  "version": "1.0.0",
+  "description": "Typed MCP client + Zod schemas + golden fixtures for the opencode-gateway contract v1",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

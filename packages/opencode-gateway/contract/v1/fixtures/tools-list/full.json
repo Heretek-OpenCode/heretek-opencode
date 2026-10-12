@@ -1,0 +1,120 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/list",
+    "params": {}
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "tools": [
+        {
+          "name": "search",
+          "description": "Search the web via SearXNG.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20,
+                "default": 5
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "fetch",
+          "description": "Fetch a page via Crawl4AI, wrapped in the untrusted provenance envelope.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "markdown",
+                  "html",
+                  "text"
+                ],
+                "default": "markdown"
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "extract_structured",
+          "description": "Extract structured fields via Scrapling stealth engine.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "research_report",
+          "description": "Autonomous deep research synthesis via GPT-Researcher.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string",
+                "minLength": 1
+              },
+              "depth": {
+                "type": "string",
+                "enum": [
+                  "quick",
+                  "standard",
+                  "deep"
+                ],
+                "default": "standard"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  }
+}
