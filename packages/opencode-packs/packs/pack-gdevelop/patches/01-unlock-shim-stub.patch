@@ -1,0 +1,26 @@
+From <commit> Mon Sep 17 00:00:00 2001
+From: t <t@t>
+Date: Mon, 12 Oct 2026 12:50:55 -0400
+Subject: [PATCH] shim
+
+---
+ unlock-shim/control-shim.js | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+ create mode 100644 unlock-shim/control-shim.js
+
+diff --git a/unlock-shim/control-shim.js b/unlock-shim/control-shim.js
+new file mode 100644
+index 0000000..a471730
+--- /dev/null
++++ b/unlock-shim/control-shim.js
+@@ -0,0 +1,10 @@
++// unlock-shim control stub (representative of donor patch 06-electron-hook).
++// The full shim preloads before the editor shell and exposes the local
++// control channel consumed by opencode-gdevelop offline tools.
++export const SHIM_CHANNEL = "heretek:gdevelop-control";
++
++export function installControlShim(target) {
++  if (!target || typeof target !== "object") return { installed: false };
++  target[SHIM_CHANNEL] = { version: 1, transport: "preload" };
++  return { installed: true, channel: SHIM_CHANNEL };
++}

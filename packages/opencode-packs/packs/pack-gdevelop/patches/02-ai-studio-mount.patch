@@ -1,0 +1,27 @@
+From <commit> Mon Sep 17 00:00:00 2001
+From: t <t@t>
+Date: Mon, 12 Oct 2026 12:50:55 -0400
+Subject: [PATCH] studio
+
+---
+ ai-studio/mount.js | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+ create mode 100644 ai-studio/mount.js
+
+diff --git a/ai-studio/mount.js b/ai-studio/mount.js
+new file mode 100644
+index 0000000..8536d03
+--- /dev/null
++++ b/ai-studio/mount.js
+@@ -0,0 +1,11 @@
++// ai-studio mount stub (representative of donor patch 11-studio-runtime-mount).
++// The full studio mounts a BYOK session runtime into the editor container;
++// API keys are held in memory only and never persisted.
++export const STUDIO_MOUNT_POINT = "ai-studio";
++
++export function mountStudio(container, { apiKey } = {}) {
++  if (!container || typeof apiKey !== "string" || apiKey.length === 0) {
++    return { mounted: false, reason: "container and in-memory apiKey required" };
++  }
++  return { mounted: true, mount: STUDIO_MOUNT_POINT, persistKey: false };
++}

@@ -11,8 +11,8 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node", "bun"]
   },
-  "include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/opencode-packs/packs/*/src/**/*"],
+  "include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/opencode-packs/packs/*/src/**/*", "packages/opencode-packs/packs/*/scripts/**/*", "packages/opencode-packs/packages/*/src/**/*", "packages/opencode-packs/packages/*/test/**/*"],
   "exclude": ["node_modules", "dist", "worktrees"]
 }

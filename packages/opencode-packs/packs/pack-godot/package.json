@@ -1,0 +1,23 @@
+{
+  "name": "@heretek-ai/pack-godot",
+  "version": "1.0.0",
+  "description": "Godot 4 domain pack: OpenCode plugin + GDScript companion addon + headless lane image",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["src", "skills", "companion", "Dockerfile.lane", "README.md"],
+  "scripts": {
+    "check": "bunx tsc --noEmit -p ../../tsconfig.json"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.26"
+  },
+  "devDependencies": {
+    "@opencode/cli": "2.0.26",
+    "@opencode/sdk": "2.0.26",
+    "typescript": "^5.5.0"
+  }
+}
