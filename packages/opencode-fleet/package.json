@@ -1,0 +1,18 @@
+{
+  "name": "@heretek-ai/fleet",
+  "version": "0.1.0",
+  "description": "Lean build factory and fleet engine: missions, task DAGs, lanes, gates, dual QA, human PR.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "fleet": "./src/cli/main.ts"
+  },
+  "scripts": {
+    "test": "bun test test/"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}
