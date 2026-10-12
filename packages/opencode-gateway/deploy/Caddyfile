@@ -1,0 +1,78 @@
+# Caddy Edge Proxy Configuration for opencode-gateway
+# Automated Let's Encrypt TLS with forward-auth guards for human interfaces.
+# Adapted from scraper-swarm/deploy/Caddyfile: same matchers and guards;
+# domain variable renamed to GATEWAY_DOMAIN and /api/* routed to panel-api
+# (the TS gateway serves only /mcp, /ready, /health).
+
+{$GATEWAY_DOMAIN:localhost} {
+	# Security Headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none';"
+	}
+
+	# Authenticated MCP Gateway Route (TS/Bun gateway: POST /mcp, GET /ready, GET /health)
+	handle /mcp* {
+		reverse_proxy gateway:8000
+	}
+
+	handle /ready {
+		reverse_proxy gateway:8000
+	}
+
+	handle /health {
+		reverse_proxy gateway:8000
+	}
+
+	# Control-plane API (panel-api: key issuance, services, auth, security)
+	handle /api/* {
+		reverse_proxy panel-api:8000
+	}
+
+	# Protected Web UIs: Forward-Auth through panel-api session verification
+	handle /apps/maxun/* {
+		forward_auth panel-api:8000 {
+			uri /auth/me
+			copy_headers swarm_session
+		}
+		uri strip_prefix /apps/maxun
+		reverse_proxy maxun:8080
+	}
+
+	handle /apps/cyberscraper/* {
+		forward_auth panel-api:8000 {
+			uri /auth/me
+			copy_headers swarm_session
+		}
+		uri strip_prefix /apps/cyberscraper
+		reverse_proxy cyberscraper:8501
+	}
+
+	# API routes
+	handle /auth/* {
+		reverse_proxy panel-api:8000
+	}
+
+	handle /services/* {
+		reverse_proxy panel-api:8000
+	}
+
+	handle /agents/* {
+		reverse_proxy panel-api:8000
+	}
+
+	handle /security/* {
+		reverse_proxy panel-api:8000
+	}
+
+	# Static Web Panel UI (Compiled Vite React Bundle).
+	# Mount a built panel UI at ./panel-web-dist (or the panel_web volume);
+	# until then this serves 404 for unmatched paths (no open proxy).
+	handle {
+		root * /var/www/panel-web
+		file_server
+		try_files {path} /index.html
+	}
+}
