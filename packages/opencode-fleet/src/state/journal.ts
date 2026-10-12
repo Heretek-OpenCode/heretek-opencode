@@ -8,7 +8,7 @@ import { redactJson } from "../util/redact.js";
  * Journal-first durability. Every state transition appends one JSONL line:
  * `{ seq, at, actor, event, data, prevHash, hash }` where
  * `hash = sha256(prevHash + canonical({seq,at,actor,event,data}))`.
- * Tamper-evident via hash chain; no keys, no envelopes.
+ * Tamper-evident via hash chain; plain sha256 only.
  */
 
 export interface JournalEntry {

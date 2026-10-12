@@ -1,0 +1,88 @@
+# Fleet expert roster (hand-maintained; keep consistent with src/experts/catalog.ts).
+# 12 core experts. Tiers record intended model strength if AGENCY_MODEL is
+# ever split; today all resolve to the one configured model.
+experts:
+  - name: director
+    profile: core
+    tier: Frontier
+    access: ro
+    writeGlobs: []
+    mcp: [fleet]
+    skills: [task-decomposition, dispatch-brief, playbook-selection, rework-decisions, mission-reporting]
+  - name: scout
+    profile: core
+    tier: Fast
+    access: ro
+    writeGlobs: []
+    mcp: [context7, deepwiki]
+    skills: [codebase-mapping, research-brief]
+  - name: architect
+    profile: core
+    tier: Frontier
+    access: scoped
+    writeGlobs: [docs/adr/*, docs/architecture/*]
+    mcp: [context7, deepwiki]
+    skills: [adr-writing, c4-modeling, tradeoff-analysis, interface-first-decomposition]
+  - name: product
+    profile: core
+    tier: Standard
+    access: scoped
+    writeGlobs: [docs/product/*, docs/requirements/*]
+    mcp: [github, linear]
+    skills: [user-story-writing, acceptance-criteria, scope-slicing]
+  - name: frontend
+    profile: core
+    tier: Standard
+    access: scoped
+    writeGlobs: [web/*, apps/web/*, src/components/*, src/pages/*, src/app/*, src/styles/*, public/*]
+    mcp: [playwright, context7, figma]
+    skills: [component-implementation, a11y-in-implementation, visual-verification, frontend-state-conventions]
+  - name: backend
+    profile: core
+    tier: Standard
+    access: scoped
+    writeGlobs: [src/*, server/*, api/*, services/*, internal/*, pkg/*, cmd/*, lib/*]
+    mcp: [context7, serena, dbhub]
+    skills: [endpoint-implementation, error-handling-conventions, dependency-addition-policy, test-with-the-change]
+  - name: dba
+    profile: core
+    tier: Standard
+    access: scoped
+    writeGlobs: [migrations/*, db/*, prisma/*, schema/*, "*.sql"]
+    mcp: [postgres, dbhub]
+    skills: [migration-authoring, query-plan-review, index-design, data-safety-checklist]
+  - name: platform
+    profile: core
+    tier: Standard
+    access: scoped
+    writeGlobs: [Dockerfile*, "*compose*.yml", .github/*, .gitlab-ci.yml, infra/*, deploy/*, k8s/*, helm/*, terraform/*, Makefile, scripts/*]
+    mcp: [terraform, kubernetes, github]
+    skills: [dockerfile-hardening, ci-pipeline-authoring, iac-plan-review, k8s-manifest-conventions]
+  - name: security
+    profile: core
+    tier: Frontier
+    access: ro
+    writeGlobs: []
+    mcp: [semgrep, trivy]
+    skills: [threat-modeling, sast-triage, dependency-risk-review, secret-exposure-procedure, security-report-format]
+  - name: qa
+    profile: core
+    tier: Standard
+    access: scoped
+    writeGlobs: [tests/*, test/*, e2e/*, "*.test.*", "*.spec.*", "*__tests__*", playwright.config.*, vitest.config.*, jest.config.*]
+    mcp: [playwright]
+    skills: [test-strategy, e2e-authoring, flake-triage, coverage-gap-analysis, bug-report-format]
+  - name: reviewer
+    profile: core
+    tier: Review
+    access: ro
+    writeGlobs: []
+    mcp: []
+    skills: [review-rubric, diff-reading-procedure, review-report-format]
+  - name: docs
+    profile: core
+    tier: Fast
+    access: scoped
+    writeGlobs: [docs/guides/*, docs/reference/*, docs/tutorials/*, README*, CONTRIBUTING*, mkdocs.yml]
+    mcp: [context7]
+    skills: [docs-structure, reference-from-source, verify-what-you-document]
