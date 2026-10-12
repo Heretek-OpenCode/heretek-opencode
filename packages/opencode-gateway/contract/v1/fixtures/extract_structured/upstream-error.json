@@ -1,0 +1,37 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "extract_structured",
+      "arguments": {
+        "url": "https://example.com/recorded"
+      }
+    }
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Scrapling extraction timed out"
+        }
+      ],
+      "structuredContent": {
+        "code": "upstream_timeout",
+        "message": "Scrapling extraction timed out",
+        "retryAfterS": null
+      },
+      "isError": true
+    }
+  }
+}

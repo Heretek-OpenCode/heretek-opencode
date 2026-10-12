@@ -1,0 +1,38 @@
+# Smokescreen egress proxy snippet (opencode-gateway lane egress).
+#
+# All engine egress goes through Smokescreen; the gateway's own SSRF pre-check
+# is the first layer, Smokescreen's per-connection resolution check the second
+# (it also covers DNS-rebinding races the gateway cannot win).
+#
+# Build (no published image; pin the source commit):
+#   docker build -f deploy/smokescreen.Dockerfile -t gateway/smokescreen:pinned deploy/
+#
+# Run args (deny ranges on top of Smokescreen's publicly-routable-only default):
+#   --listen-ip 0.0.0.0 --listen-port 4750
+#   --deny-range 100.64.0.0/10
+#   --deny-range 169.254.0.0/16
+#   --deny-range fc00::/7
+#   --deny-range fe80::/10
+#
+# Lane proxy env (engines + fleet lanes):
+#   HTTP_PROXY=http://smokescreen:4750 HTTPS_PROXY=http://smokescreen:4750
+#   NO_PROXY=gateway,searxng,crawl4ai,scrapling,valkey  # declared direct_peers only
+#
+# Loopback MUST NOT bypass the proxy except for container healthchecks
+# (curl --noproxy '*'), or probes get 407 and flap.
+FROM golang:1 AS build
+ARG SMOKESCREEN_REF=609eb8931420453daf5893509be0b25b21bd9edb
+RUN git clone https://github.com/stripe/smokescreen /src \
+ && cd /src && git checkout "${SMOKESCREEN_REF}" \
+ && CGO_ENABLED=0 go build -trimpath -o /out/smokescreen .
+
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --from=build /out/smokescreen /smokescreen
+USER 65532:65532
+EXPOSE 4750
+ENTRYPOINT ["/smokescreen"]
+CMD ["--listen-ip", "0.0.0.0", "--listen-port", "4750", \
+     "--deny-range", "100.64.0.0/10", \
+     "--deny-range", "169.254.0.0/16", \
+     "--deny-range", "fc00::/7", \
+     "--deny-range", "fe80::/10"]

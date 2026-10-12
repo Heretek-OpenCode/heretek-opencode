@@ -1,0 +1,56 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "research_report",
+      "arguments": {
+        "query": "recorded query",
+        "depth": "standard"
+      }
+    }
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "# Research Report: recorded query\n\n## Summary\n\nRecorded synthesis of 2 sources.\n\n## Sources\n\n- Recorded One (https://example.com/recorded-1)\n- Recorded Two (https://example.com/recorded-2)\n"
+        }
+      ],
+      "structuredContent": {
+        "provenance": {
+          "url": "gpt-researcher://report?q=recorded+query",
+          "fetchedAt": "<fetchedAt>",
+          "engine": "gpt-researcher",
+          "contentHash": "sha256:23f13f407ff5c14315b41a0a8347a9d30c63e8fea1115ca8e74f2fd108587573"
+        },
+        "trust": "untrusted",
+        "content": "# Research Report: recorded query\n\n## Summary\n\nRecorded synthesis of 2 sources.\n\n## Sources\n\n- Recorded One (https://example.com/recorded-1)\n- Recorded Two (https://example.com/recorded-2)\n",
+        "query": "recorded query",
+        "depth": "standard",
+        "citations": [
+          {
+            "url": "https://example.com/recorded-1",
+            "title": "Recorded One",
+            "contentHash": "sha256:afd6075b8af6f96d45cf55f10093b455288ad52b054346f6b32d253e02f31efe"
+          },
+          {
+            "url": "https://example.com/recorded-2",
+            "title": "Recorded Two",
+            "contentHash": "sha256:02d784772044cafa42c94d08d61db7253812462232fece721e90e6adf7012907"
+          }
+        ]
+      }
+    }
+  }
+}

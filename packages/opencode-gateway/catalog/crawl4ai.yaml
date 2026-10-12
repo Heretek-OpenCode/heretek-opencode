@@ -1,0 +1,18 @@
+id: crawl4ai
+name: Crawl4AI
+tier: core
+license: { spdx: Apache-2.0 }
+image: { repo: unclecode/crawl4ai, tag: latest }
+port: 11235
+networks: [svc, egress-web]
+resources:
+  lite: { cpus: 1, mem: 2g, shm: 1g }
+  standard: { cpus: 2, mem: 4g, shm: 2g }
+hardening: { user: "999:999", seccomp: chromium }
+env:
+  CRAWL4AI_ALLOW_INTERNAL_URLS: "true"
+egress: { proxy: smokescreen, direct_peers: [gateway] }
+health:
+  test: ["CMD-SHELL", "curl --noproxy '*' -f http://localhost:11235/health || exit 1"]
+  interval: 30s
+tools: [fetch]

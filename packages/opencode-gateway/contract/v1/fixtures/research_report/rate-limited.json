@@ -1,0 +1,23 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "tools/call",
+    "params": {
+      "name": "research_report",
+      "arguments": {
+        "query": "recorded query"
+      }
+    }
+  },
+  "response_status": 429,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1",
+    "retry-after": "<retry_after_s>"
+  },
+  "response_body": {
+    "detail": "Rate limit exceeded (60 req/min)"
+  }
+}

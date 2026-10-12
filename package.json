@@ -3,6 +3,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
+    "packages/opencode-gateway/packages/*",
+    "packages/opencode-gateway/apps/*",
     "packages/opencode-packs/packs/*"
   ],
   "scripts": {

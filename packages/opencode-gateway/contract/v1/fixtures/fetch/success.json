@@ -1,0 +1,49 @@
+{
+  "contract_version": 1,
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "fetch",
+      "arguments": {
+        "url": "https://example.com/recorded"
+      }
+    }
+  },
+  "response_status": 200,
+  "response_headers": {
+    "content-type": "application/json",
+    "x-swarm-contract": "1"
+  },
+  "response_body": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "# Recorded\n\nRecorded body text."
+        }
+      ],
+      "structuredContent": {
+        "provenance": {
+          "url": "https://example.com/recorded",
+          "fetchedAt": "<fetchedAt>",
+          "engine": "crawl4ai",
+          "contentHash": "sha256:0cb130bc2c0a6fe07c14366f51c96b2cae6b12a12777767524aa49e199c6876f"
+        },
+        "trust": "untrusted",
+        "content": "# Recorded\n\nRecorded body text.",
+        "requestedUrl": "https://example.com/recorded",
+        "finalUrl": "https://example.com/recorded",
+        "statusCode": 200,
+        "contentType": "text/markdown",
+        "title": "Recorded Page",
+        "format": "markdown",
+        "bytes": 31,
+        "truncated": false
+      }
+    }
+  }
+}
