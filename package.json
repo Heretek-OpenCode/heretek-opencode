@@ -1,0 +1,18 @@
+{
+  "name": "heretek-opencode-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "packages/opencode-packs/packs/*"
+  ],
+  "scripts": {
+    "check": "bunx oxlint && bunx tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "oxlint": "^0.15.0",
+    "typescript": "^5.5.0",
+    "zod": "^3.23.8"
+  }
+}
