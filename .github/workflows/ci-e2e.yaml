@@ -1,0 +1,47 @@
+name: ci-e2e
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: bun install
+      - name: install opencode
+        run: |
+          curl -fsSL https://opencode.ai/install | bash
+          echo "$HOME/.opencode/bin" >> "$GITHUB_PATH"
+      - name: compose config
+        run: docker compose -f compose.yaml config > /dev/null
+        working-directory: packages/opencode-homelab
+        env:
+          OPENCODE_PASSWORD: dummy-ci-secret
+      - name: compose smoke
+        run: ./scripts/compose_lane_smoke.sh
+        working-directory: packages/opencode-homelab
+        env:
+          OPENCODE_PASSWORD: dummy-ci-secret
+      - name: live e2e
+        run: bun run scripts/test-live-e2e.ts
+        working-directory: packages/opencode-homelab
+        timeout-minutes: 10
+        env:
+          KEEP_E2E_WORKDIR: "1"
+      - name: collect artifacts
+        if: always()
+        run: mkdir -p e2e-artifacts && cp -r /tmp/opencode-live-e2e-* e2e-artifacts/ 2>/dev/null || true
+        working-directory: packages/opencode-homelab
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-e2e-receipts
+          path: packages/opencode-homelab/e2e-artifacts/
