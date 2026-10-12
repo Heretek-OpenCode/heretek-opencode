@@ -1,0 +1,18 @@
+{
+  "name": "@heretek-ai/opencode-packs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tier 2 domain pack monorepo: pack-sdk + pack-godot + pack-gdevelop + pack-rea",
+  "workspaces": [
+    "packages/*",
+    "packs/*"
+  ],
+  "scripts": {
+    "check": "bunx tsc --noEmit -p tsconfig.json",
+    "test": "bun test packages/pack-sdk/test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.4",
+    "typescript": "^5.5.0"
+  }
+}

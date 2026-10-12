@@ -1,0 +1,17 @@
+# lane-gdevelop — GDevelop verification lane for pack-gdevelop.
+# Built and published by CI as ghcr.io/heretek-opencode/lane-gdevelop:5.x.
+# CI passes --build-arg BASE_IMAGE=<digest-pinned ref>; the default below is
+# for local iteration only and must not be released unpinned.
+ARG BASE_IMAGE=oven/bun:1
+FROM ${BASE_IMAGE} AS lane
+
+LABEL org.opencontainers.image.title="lane-gdevelop" \
+      org.opencontainers.image.description="GDevelop patch-stack verification lane for pack-gdevelop"
+
+ENV OPENCE_PACK=gdevelop
+
+WORKDIR /work
+
+# Rebase-discipline gate (donor issue #13): the patch stack must apply cleanly.
+# The pack source is mounted at /work by the lane runner before this runs.
+CMD ["bun", "run", "verify-patches"]

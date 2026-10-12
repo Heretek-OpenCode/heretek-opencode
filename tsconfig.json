@@ -13,6 +13,6 @@
     "outDir": "dist",
     "types": ["node", "bun-types"]
   },
-  "include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/opencode-gateway/packages/*/src/**/*", "packages/opencode-gateway/packages/*/test/**/*", "packages/opencode-gateway/apps/*/src/**/*", "packages/opencode-gateway/apps/*/test/**/*", "packages/opencode-packs/packs/*/src/**/*"],
+  "include": ["packages/*/src/**/*", "packages/*/test/**/*", "packages/opencode-gateway/packages/*/src/**/*", "packages/opencode-gateway/packages/*/test/**/*", "packages/opencode-gateway/apps/*/src/**/*", "packages/opencode-gateway/apps/*/test/**/*", "packages/opencode-packs/packs/*/src/**/*", "packages/opencode-packs/packs/*/scripts/**/*", "packages/opencode-packs/packages/*/src/**/*", "packages/opencode-packs/packages/*/test/**/*"],
   "exclude": ["node_modules", "dist", "worktrees"]
 }

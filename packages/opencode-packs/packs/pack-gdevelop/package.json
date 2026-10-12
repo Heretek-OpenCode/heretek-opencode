@@ -1,0 +1,22 @@
+{
+  "name": "@heretek-ai/pack-gdevelop",
+  "version": "1.0.0",
+  "description": "GDevelop domain pack: consolidated unlock shim + BYOK AI studio + patch-stack verification",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["src", "skills", "patches", "scripts", "Dockerfile.lane", "README.md"],
+  "scripts": {
+    "check": "bunx tsc --noEmit -p ../../tsconfig.json",
+    "verify-patches": "bun scripts/verify-patches.ts"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.26"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

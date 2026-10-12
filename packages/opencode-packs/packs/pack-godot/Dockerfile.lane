@@ -1,0 +1,20 @@
+# lane-godot — headless Godot 4.x verification lane for pack-godot.
+# Built and published by CI as ghcr.io/heretek-opencode/lane-godot:4.x.
+# CI passes --build-arg BASE_IMAGE=<digest-pinned Godot headless ref>; the
+# default below is for local iteration only and must not be released unpinned.
+ARG BASE_IMAGE=barichello/godot-ci:latest
+FROM ${BASE_IMAGE} AS lane
+
+LABEL org.opencontainers.image.title="lane-godot" \
+      org.opencontainers.image.description="Headless Godot 4.x lane for pack-godot task verification"
+
+ENV GODOT_HEADLESS=1 \
+    OPENCE_PACK=godot
+
+WORKDIR /work
+
+# godot.ping handshake target when no editor is attached.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD godot --version || exit 1
+
+CMD ["godot", "--headless", "--version"]

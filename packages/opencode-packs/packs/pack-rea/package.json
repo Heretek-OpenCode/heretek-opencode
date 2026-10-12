@@ -1,0 +1,25 @@
+{
+  "name": "@heretek-ai/pack-rea",
+  "version": "1.0.0",
+  "description": "REA reverse-engineering domain pack: readiness handshake + agents + skills",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": ["src", "agents", "skills", "README.md"],
+  "scripts": {
+    "check": "bunx tsc --noEmit -p ../../tsconfig.json"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.26"
+  },
+  "devDependencies": {
+    "@opencode/cli": "2.0.26",
+    "@opencode/plugin": "2.0.26",
+    "@opencode/sdk": "2.0.26",
+    "rea-agents": "6.4.0",
+    "typescript": "^5.5.0"
+  }
+}
