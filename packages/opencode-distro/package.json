@@ -1,0 +1,18 @@
+{
+  "name": "@heretek-ai/distro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned OpenCode host distribution wrapper (host 2.0.26).",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "sync": "bun scripts/sync.ts",
+    "sync:check": "bun scripts/sync.ts --check"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}
