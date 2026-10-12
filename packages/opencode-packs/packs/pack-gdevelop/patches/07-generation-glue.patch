@@ -1,0 +1,583 @@
+--- a/newIDE/app/src/Utils/GDevelopServices/Generation.js
++++ b/newIDE/app/src/Utils/GDevelopServices/Generation.js
+@@ -5,11 +5,26 @@
+ import { type MessageByLocale } from '../i18n/MessageByLocale';
+ import { getIDEVersionWithHash } from '../../Version';
+ import { extractNextPageUriFromLinkHeader } from './Play';
++import { ensureIsArray, ensureObjectHasProperty } from '../DataValidator';
+ import {
+-  ensureIsArray,
+-  ensureIsObject,
+-  ensureObjectHasProperty,
+-} from '../DataValidator';
++  isCustomEndpointEnabled,
++  customCreateAiRequest,
++  customAddMessageToAiRequest,
++  customGetAiRequest,
++  customGetAiRequests,
++  customGetAiRequestStatuses,
++  customSuspendAiRequest,
++  customForkAiRequest,
++  customDeleteAiRequest,
++  customPatchAiRequestAttributes,
++  customRetryAiRequest,
++  customGetAiRequestSuggestions,
++  customCreateAiGeneratedEvent,
++  customCreateAssetSearch,
++  customCreateResourceSearch,
++  DEFAULT_LOCAL_AI_SETTINGS,
++  LOCAL_BYOK_USER_ID,
++} from '../../AI/CustomAIClient';
+ 
+ export type Environment = 'staging' | 'live';
+ 
+@@ -162,6 +177,9 @@
+   forkedAfterOriginalMessageId?: string | null,
+   forkedAfterNewMessageId?: string | null,
+   parentAiRequestId?: string | null,
++  // The studio role a sub-agent was spawned with (fork-only; set only on local
++  // sub-agent requests) so its tool subset and prompt survive every turn.
++  studioRoleId?: string | null,
+ 
+   error: AiRequestError | null,
+   contextStats?: AiRequestContextStats | null,
+@@ -340,6 +358,10 @@
+     outputFromMessageId?: ?string,
+   |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customGetAiRequest(aiRequestId);
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   // $FlowFixMe[underconstrained-implicit-instantiation]
+   const response = await axios.get(
+@@ -380,25 +402,42 @@
+ > => {
+   if (aiRequestIds.length === 0) return [];
+ 
+-  const authorizationHeader = await getAuthorizationHeader();
+-  // $FlowFixMe[underconstrained-implicit-instantiation]
+-  const response = await axios.get(
+-    `${GDevelopGenerationApi.baseUrl}/ai-request`,
+-    {
+-      params: {
+-        userId,
+-        ids: aiRequestIds.join(','),
+-        include: 'status',
+-      },
+-      headers: {
+-        Authorization: authorizationHeader,
+-      },
++  const localIds = aiRequestIds.filter(id => id.startsWith('local-ai-'));
++  const hostedIds = aiRequestIds.filter(id => !id.startsWith('local-ai-'));
++
++  const results = [];
++  if (localIds.length > 0) {
++    const localStatuses = await customGetAiRequestStatuses(localIds);
++    results.push(...localStatuses);
++  }
++  if (hostedIds.length > 0) {
++    const authorizationHeader = await getAuthorizationHeader();
++    // $FlowFixMe[underconstrained-implicit-instantiation]
++    const response = await axios.get(
++      `${GDevelopGenerationApi.baseUrl}/ai-request`,
++      {
++        params: {
++          userId,
++          ids: hostedIds.join(','),
++          include: 'status',
++        },
++        headers: {
++          Authorization: authorizationHeader,
++        },
++      }
++    );
++    // The response body is unvalidated: a truthy non-array (an object, a
++    // number) makes the spread throw, and a non-object element breaks the
++    // consumer that destructures `{ id, status }`. Keep only object entries.
++    if (Array.isArray(response.data)) {
++      results.push(
++        ...response.data.filter(
++          item => item && typeof item === 'object' && !Array.isArray(item)
++        )
++      );
+     }
+-  );
+-  return ensureIsArray({
+-    data: response.data,
+-    endpointName: '/ai-request?ids=...&include=status of Generation API',
+-  });
++  }
++  return results;
+ };
+ 
+ /**
+@@ -469,6 +508,36 @@
+   all: 'any',
+ };
+ 
++/**
++ * Local BYOK chats from the client cache, shaped like the hosted
++ * /ai-request-summary contract (summaries only, no sub-agents), filtered by
++ * archived state and game when asked. Always available offline — independent
++ * of whether the custom endpoint toggle is currently on.
++ */
++const getLocalAiRequestSummaries = ({
++  filter,
++  gameId,
++}: {|
++  filter: AiRequestSummariesFilter,
++  gameId?: ?string,
++|}): Array<AiRequestSummary> => {
++  const { aiRequests } = customGetAiRequests();
++  return aiRequests
++    .filter(aiRequest => {
++      if (aiRequest.parentAiRequestId) return false;
++      if (
++        gameId !== undefined &&
++        gameId !== null &&
++        (aiRequest.gameId || null) !== gameId
++      )
++        return false;
++      if (filter === 'active') return !aiRequest.archivedAt;
++      if (filter === 'archived') return !!aiRequest.archivedAt;
++      return true;
++    })
++    .map(getAiRequestSummary);
++};
++
+ export const getAiRequestSummaries = async (
+   getAuthorizationHeader: () => Promise<string>,
+   {
+@@ -489,33 +558,54 @@
+   aiRequestSummaries: Array<AiRequestSummary>,
+   nextPageUri: ?string,
+ }> => {
++  // Always list local BYOK chats (from the client cache) so toggling the
++  // custom endpoint off or logging out does not hide them. The hosted page is
++  // fetched only when a real profile userId is given — LOCAL_BYOK is offline.
++  const localSummaries = getLocalAiRequestSummaries({ filter, gameId });
++  if (userId === LOCAL_BYOK_USER_ID) {
++    return { aiRequestSummaries: localSummaries, nextPageUri: null };
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const uri = forceUri || '/ai-request-summary';
+ 
+-  // $FlowFixMe[incompatible-type]
+-  const response = await apiClient.get(uri, {
+-    headers: {
+-      Authorization: authorizationHeader,
+-    },
+-    params: forceUri
+-      ? { userId }
+-      : {
+-          userId,
+-          perPage: 10,
+-          archived: archivedParameterByFilter[filter],
+-          gameId: gameId || undefined,
+-        },
+-  });
+-  const nextPageUri = response.headers.link
+-    ? extractNextPageUriFromLinkHeader(response.headers.link)
+-    : null;
+-  return {
+-    aiRequestSummaries: ensureIsArray({
++  try {
++    // $FlowFixMe[incompatible-type]
++    const response = await apiClient.get(uri, {
++      headers: {
++        Authorization: authorizationHeader,
++      },
++      params: forceUri
++        ? { userId }
++        : {
++            userId,
++            perPage: 10,
++            archived: archivedParameterByFilter[filter],
++            gameId: gameId || undefined,
++          },
++    });
++    const nextPageUri = response.headers.link
++      ? extractNextPageUriFromLinkHeader(response.headers.link)
++      : null;
++    const hostedSummaries = ensureIsArray({
+       data: response.data,
+       endpointName: '/ai-request-summary of Generation API',
+-    }),
+-    nextPageUri,
+-  };
++    });
++    // Merge (statuses already do this for local-ai-* ids): local first, then
++    // the hosted page. The UI re-sorts by createdAt before display.
++    return {
++      aiRequestSummaries: [...localSummaries, ...hostedSummaries],
++      nextPageUri,
++    };
++  } catch (error) {
++    // Offline / hosted outage: still show whatever local chats exist rather
++    // than blanking the history. Re-throw only when there is nothing to fall
++    // back to, so the context can surface its retry UI.
++    if (localSummaries.length > 0 || isCustomEndpointEnabled()) {
++      return { aiRequestSummaries: localSummaries, nextPageUri: null };
++    }
++    throw error;
++  }
+ };
+ 
+ export const createAiRequest = async (
+@@ -559,6 +649,19 @@
+     toolsVersion: string,
+   |}
+ ): Promise<AiRequest> => {
++  // Offline BYOK (local-byok-user) must create locally even if the endpoint
++  // toggle was flipped off after the session started.
++  if (isCustomEndpointEnabled() || (userId && userId.startsWith('local-'))) {
++    return customCreateAiRequest({
++      userRequest,
++      gameProjectJson,
++      projectSpecificExtensionsSummaryJson,
++      mode,
++      aiConfiguration,
++      gameId,
++    });
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     '/ai-request',
+@@ -632,6 +735,17 @@
+     toolsVersion?: string,
+   |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customAddMessageToAiRequest({
++      aiRequestId,
++      userMessage,
++      functionCallOutputs,
++      gameProjectJson,
++      projectSpecificExtensionsSummaryJson,
++      mode,
++    });
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-request/${aiRequestId}/action/add-message`,
+@@ -676,6 +790,10 @@
+   getAuthorizationHeader: () => Promise<string>,
+   { userId, aiRequestId }: {| userId: string, aiRequestId: string |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customRetryAiRequest(aiRequestId);
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-request/${aiRequestId}/action/retry`,
+@@ -693,6 +811,10 @@
+   getAuthorizationHeader: () => Promise<string>,
+   { userId, aiRequestId }: {| userId: string, aiRequestId: string |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customSuspendAiRequest(aiRequestId);
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-request/${aiRequestId}/action/suspend`,
+@@ -725,6 +847,10 @@
+     archived?: boolean,
+   |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customPatchAiRequestAttributes(aiRequestId, { title, archived });
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const attributes: { title?: string | null, archived?: boolean } = {};
+   if (title !== undefined) attributes.title = title;
+@@ -745,6 +871,11 @@
+   getAuthorizationHeader: () => Promise<string>,
+   { userId, aiRequestId }: {| userId: string, aiRequestId: string |}
+ ): Promise<void> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    customDeleteAiRequest(aiRequestId);
++    return;
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   await apiClient.delete(`/ai-request/${aiRequestId}`, {
+     params: { userId },
+@@ -768,6 +899,9 @@
+     projectVersionIdAfterMessage?: ?string,
+   |}
+ ): Promise<void> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return;
++  }
+   const authorizationHeader = await getAuthorizationHeader();
+   await apiClient.patch(
+     `/ai-request/${aiRequestId}/message/${aiRequestMessageId}`,
+@@ -804,6 +938,11 @@
+     freeFormDetails?: string,
+   |}
+ ): Promise<AiRequest> => {
++  // Local BYOK chats have no hosted feedback store — never POST local-ai-*
++  // ids to the Generation API (same short-circuit as retry/suspend/delete).
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customGetAiRequest(aiRequestId);
++  }
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-request/${aiRequestId}/action/set-feedback`,
+@@ -850,6 +989,10 @@
+     projectSpecificExtensionsSummaryJsonUserRelativeKey: string | null,
+   |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customGetAiRequestSuggestions(aiRequestId);
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-request/${aiRequestId}/action/get-suggestions`,
+@@ -919,7 +1062,7 @@
+     functionName: string | null,
+     sceneName: string,
+     eventsDescription: string | null,
+-    eventBatches: Array<AiGeneratedEventBatch> | null,
++    eventBatches: ?EventsBatchToGenerate,
+     extensionNamesList: string,
+     objectsList: string,
+     existingEventsJson: string | null,
+@@ -929,6 +1072,24 @@
+     estimatedComplexity: number | null,
+   |}
+ ): Promise<CreateAiGeneratedEventResult> => {
++  // Local chats (local-ai-*) and offline BYOK users must not hit the hosted
++  // event-generation API when the endpoint toggle is off (mixed history).
++  if (
++    isCustomEndpointEnabled() ||
++    (userId && userId.startsWith('local-')) ||
++    (relatedAiRequestId && relatedAiRequestId.startsWith('local-ai-'))
++  ) {
++    return customCreateAiGeneratedEvent({
++      sceneName,
++      eventsDescription,
++      eventBatches,
++      extensionNamesList,
++      objectsList,
++      existingEventsAsText: existingEventsJson || undefined,
++      aiRequestId: relatedAiRequestId || null,
++    });
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-generated-event`,
+@@ -998,6 +1159,28 @@
+     aiGeneratedEventId: string,
+   |}
+ ): Promise<AiGeneratedEvent> => {
++  if (aiGeneratedEventId.startsWith('local-evt-')) {
++    return {
++      id: aiGeneratedEventId,
++      createdAt: new Date().toISOString(),
++      updatedAt: new Date().toISOString(),
++      userId: LOCAL_BYOK_USER_ID,
++      status: 'ready',
++      partialGameProjectJson: '',
++      eventsDescription: null,
++      eventBatches: null,
++      extensionNamesList: '',
++      objectsList: '',
++      existingEventsAsText: '',
++      existingEventsJson: null,
++      existingEventsJsonUserRelativeKey: null,
++      resultMessage: null,
++      changes: [],
++      error: null,
++      stats: null,
++    };
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.get(
+     `/ai-generated-event/${aiGeneratedEventId}`,
+@@ -1022,8 +1205,8 @@
+   {
+     userId,
+     searchTerms,
+-    description,
+     objectType,
++    description,
+     twoDimensionalViewKind,
+     exactOrPartialAssetId,
+     relatedAiRequestId,
+@@ -1032,23 +1215,30 @@
+   }: {|
+     userId: string,
+     searchTerms: string,
+-    description: string,
+-    objectType: string | null,
+-    twoDimensionalViewKind: string,
+-    exactOrPartialAssetId?: string | null,
+-    relatedAiRequestId?: string | null,
+-    lastUserMessage?: string | null,
++    objectType?: ?string,
++    description?: ?string,
++    twoDimensionalViewKind?: ?string,
++    exactOrPartialAssetId?: ?string,
++    relatedAiRequestId?: ?string,
++    lastUserMessage?: ?string,
+     lastAssistantMessages?: string[],
+   |}
+ ): Promise<AssetSearch> => {
++  if (
++    isCustomEndpointEnabled() ||
++    (userId && userId.startsWith('local-')) ||
++    (relatedAiRequestId && relatedAiRequestId.startsWith('local-ai-'))
++  ) {
++    return customCreateAssetSearch({ searchTerms, objectType });
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/asset-search`,
+     {
+-      gdevelopVersionWithHash: getIDEVersionWithHash(),
+       searchTerms,
+-      description,
+       objectType,
++      description,
+       twoDimensionalViewKind,
+       exactOrPartialAssetId,
+       relatedAiRequestId,
+@@ -1083,11 +1273,14 @@
+     resourceKind: string,
+   |}
+ ): Promise<ResourceSearch> => {
++  if (isCustomEndpointEnabled() || (userId && userId.startsWith('local-'))) {
++    return customCreateResourceSearch({ searchTerms, resourceKind });
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/resource-search`,
+     {
+-      gdevelopVersionWithHash: getIDEVersionWithHash(),
+       searchTerms,
+       resourceKind,
+     },
+@@ -1130,11 +1323,20 @@
+     eventsJsonHash: string | null,
+   |}
+ ): Promise<AiUserContentPresignedUrlsResult> => {
++  if (isCustomEndpointEnabled() || (userId && userId.startsWith('local-'))) {
++    return {
++      gameProjectJsonSignedUrl: undefined,
++      gameProjectJsonUserRelativeKey: undefined,
++      projectSpecificExtensionsSummaryJsonSignedUrl: undefined,
++      projectSpecificExtensionsSummaryJsonUserRelativeKey: undefined,
++      eventsJsonSignedUrl: undefined,
++      eventsJsonUserRelativeKey: undefined,
++    };
++  }
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-user-content/action/create-presigned-urls`,
+     {
+-      gdevelopVersionWithHash: getIDEVersionWithHash(),
+       gameProjectJsonHash,
+       projectSpecificExtensionsSummaryJsonHash,
+       eventsJsonHash,
+@@ -1148,8 +1350,9 @@
+       },
+     }
+   );
+-  return ensureIsObject({
++  return ensureObjectHasProperty({
+     data: response.data,
++    propertyName: 'gameProjectJsonSignedUrl',
+     endpointName:
+       '/ai-user-content/action/create-presigned-urls of Generation API',
+   });
+@@ -1176,6 +1379,15 @@
+     |}>,
+   |}
+ ): Promise<Array<AiAttachmentUpload>> => {
++  // An attachment is uploaded to GDevelop's storage, which a custom endpoint
++  // cannot read back: in BYOK mode it would only leak the file. Refuse before
++  // any hosted call (same rule as createAiUserContentPresignedUrls above).
++  if (isCustomEndpointEnabled() || (userId && userId.startsWith('local-'))) {
++    throw new Error(
++      'Attachments are not available while a custom AI endpoint is enabled ' +
++        '(they would be uploaded to GDevelop servers).'
++    );
++  }
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-user-content/action/create-attachment-uploads`,
+@@ -1214,6 +1426,14 @@
+     attachmentIds: Array<string>,
+   |}
+ ): Promise<Array<AiAttachmentDownload>> => {
++  // The offline BYOK user has no hosted attachments: never ask for them.
++  // (Attachments of a hosted chat are hosted data and are still read there.)
++  if (userId && userId.startsWith('local-')) {
++    return attachmentIds.map(attachmentId => ({
++      attachmentId,
++      error: 'not-found',
++    }));
++  }
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-user-content/action/create-attachment-downloads`,
+@@ -1258,6 +1478,10 @@
+     upToMessageId?: string,
+   |}
+ ): Promise<AiRequest> => {
++  if (aiRequestId.startsWith('local-ai-')) {
++    return customForkAiRequest(aiRequestId, upToMessageId);
++  }
++
+   const authorizationHeader = await getAuthorizationHeader();
+   const response = await apiClient.post(
+     `/ai-request/${aiRequestId}/action/fork`,
+@@ -1285,13 +1509,25 @@
+ }: {|
+   environment: Environment,
+ |}): Promise<AiSettings> => {
+-  // $FlowFixMe[underconstrained-implicit-instantiation]
+-  const response = await axios.get(
+-    `${GDevelopAiCdn.baseUrl[environment]}/ai-settings-v2.json`
+-  );
+-  return ensureObjectHasProperty({
+-    data: response.data,
+-    propertyName: 'aiRequest',
+-    endpointName: '/ai-settings-v2.json of Generation API',
+-  });
++  // Local/BYOK sessions never need the hosted preset catalog: plan gating is
++  // unused (all presets available) and DEFAULT_LOCAL_AI_SETTINGS already has
++  // the orchestrator/chat/agent defaults. Skip the CDN so offline custom
++  // endpoint users do not wait on axios timeouts every editor open.
++  if (isCustomEndpointEnabled()) {
++    return DEFAULT_LOCAL_AI_SETTINGS;
++  }
++  try {
++    // $FlowFixMe[underconstrained-implicit-instantiation]
++    const response = await axios.get(
++      `${GDevelopAiCdn.baseUrl[environment]}/ai-settings-v2.json`,
++      { timeout: 5000 }
++    );
++    return ensureObjectHasProperty({
++      data: response.data,
++      propertyName: 'aiRequest',
++      endpointName: '/ai-settings-v2.json of Generation API',
++    });
++  } catch (err) {
++    return DEFAULT_LOCAL_AI_SETTINGS;
++  }
+ };
