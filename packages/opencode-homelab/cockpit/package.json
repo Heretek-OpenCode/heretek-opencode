@@ -1,0 +1,10 @@
+{
+  "name": "@heretek-ai/homelab-cockpit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cockpit mission projections + minimal viewer (framework-free)",
+  "type": "module",
+  "scripts": {
+    "test": "bun test ./test"
+  }
+}

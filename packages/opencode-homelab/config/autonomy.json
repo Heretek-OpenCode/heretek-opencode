@@ -1,0 +1,6 @@
+{
+  "$schema": "https://example.heretek-ai.local/schemas/autonomy-v1.json",
+  "version": 1,
+  "mode": "balanced",
+  "_comment": "Manager autonomy dial (STC #8). advisory = stop every stage; balanced = stop at spec + PR; full = stop only at PR. Human merge is always required."
+}
