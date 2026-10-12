@@ -5,9 +5,10 @@
       "origin": "newIDE/app/src/AI/CustomAIClient.js",
       "sha256": "28e24dde3cde3941f6ae514d415fcc5069ce2229f3d888e95aa767ebef7e22f1"
     },
-    "AI/CustomAIClient.spec.js": {
+    "AI/CustomAIClient.reference-spec.js": {
       "bytes": 257794,
       "origin": "newIDE/app/src/AI/CustomAIClient.spec.js",
+      "note": "Renamed from CustomAIClient.spec.js so `bun test` does not discover it: the file uses Flow casts and runs only inside newIDE/app (react-app-rewired test), not under bun. Content byte-identical to donor spec.",
       "sha256": "0152072739b6590f004e886b8a5787cd769a529f044f14e48ca7e78ecc2a560a"
     },
     "AiGeneration/Studio/DebugEvents.js": {

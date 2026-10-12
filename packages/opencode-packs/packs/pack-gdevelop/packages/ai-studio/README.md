@@ -11,7 +11,7 @@ there is no donor checkout anywhere in build, test, or CI paths.
 | Path | Historical origin | Notes |
 |---|---|---|
 | `AI/CustomAIClient.js` | `newIDE/app/src/AI/CustomAIClient.js` (5870 lines) | OpenAI-compatible client, 39-tool `GDEVELOP_OPENAI_TOOLS`, SSE streaming, `gd-custom-ai-*` localStorage keys. **Zero `api.gdevelop.io` references** (pinned by test) |
-| `AI/CustomAIClient.spec.js` | co-located spec | Run inside `newIDE/app` (`react-app-rewired test`), not here |
+| `AI/CustomAIClient.reference-spec.js` | co-located spec | Run inside `newIDE/app` (`react-app-rewired test`), not here (renamed from `*.spec.js` so `bun test` skips it — Flow casts don't parse under bun) |
 | `AiGeneration/Studio/*.js` (12 prod) | `AiGeneration/Studio/` (2371 LOC) | Roles, PlanStore, LoopGuard, SpawnSubAgents, FinalizeSubAgents, UseStudioRuntime, UseStudioNudge, NudgePolicy, RequestWriteGate, RoleToolPolicy, SafeTruncation, EditApprovalLabel |
 | `dev-harness/mock-ai-provider.js` | `scripts/dev/mock-ai-provider.js` | Committed OpenAI-compatible mock for offline E2E (+ `mock-script*.json` fixtures) |
 
